@@ -1,9 +1,8 @@
-name: Deploy to Cloudflare Pages
-
+name: Deploy
 on:
   push:
     branches: [main]
-
+  workflow_dispatch:
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -12,10 +11,14 @@ jobs:
       deployments: write
     steps:
       - uses: actions/checkout@v4
-
-      - name: Deploy to Cloudflare Pages
+      - name: Create CF project
+        run: |
+          curl -s -X POST "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/pages/projects" \
+            -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}" -H "Content-Type: application/json" \
+            -d '{"name":"font-preview","production_branch":"main"}' || true
+      - name: Deploy
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy . --project-name=font-preview
+          command: pages deploy . --project-name=font-preview --commit-dirty=true
